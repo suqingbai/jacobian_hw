@@ -36,7 +36,8 @@ daemon: both the dev profile and the tests start PostgreSQL in a container. Use 
 - **Dev profile:** `bootRun` with the `dev` profile uses Spring Boot's Docker Compose support to
   start the Postgres service in [`compose.yaml`](compose.yaml) and point the datasource at it
   automatically; there is no separate `docker compose up` step. The container is stopped (not
-  removed) when the app exits, so data survives restarts; `docker compose down` resets it.
+  removed) when the app exits, so data survives restarts; `docker compose down -v` resets it
+  (without `-v` the Postgres data volume is left behind as a dangling anonymous volume).
 - **Tests:** the Spring Boot tests import `PostgresTestConfiguration`, which starts a
   Testcontainers Postgres (same image tag as `compose.yaml`) wired in through `@ServiceConnection`.
   There is no in-memory database substitute, so `./gradlew test` and `./gradlew build` need Docker.

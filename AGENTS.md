@@ -3,7 +3,7 @@
 This file is the project's committed home for project-intrinsic agent knowledge: build, test, release, architecture, and sharp-edge notes that should travel with the code.
 
 - Build/lint/test/run commands: see `README.md`. `./gradlew build` must stay green; run `./gradlew spotlessApply` before committing Java changes.
-- All dependency and plugin versions live in `gradle/libs.versions.toml`; build scripts reference catalog aliases only. Spring Boot starters are versionless and resolved through the `spring-boot-dependencies` platform.
+- All dependency and plugin versions live in `gradle/libs.versions.toml`; build scripts reference catalog aliases only. Spring Boot starters are versionless and resolved through the `spring-boot-dependencies` platform; Flyway is the one deliberate override (see the comment in the catalog), so drop it once Boot manages a version that supports PostgreSQL 18.
 - Stay on Spring Boot 3.x (not 4.x) and Gradle 8.x: Spring Boot 3.5 docs list Gradle 7.6.4+/8.4+ as supported, not 9.x.
 - Tests and the `dev` profile need Docker: tests use a Testcontainers Postgres (`PostgresTestConfiguration`, no H2), dev uses Spring Boot Docker Compose support with `compose.yaml`. Keep the Postgres image tag identical in both.
 - Flyway owns the schema (`ddl-auto=validate`); schema changes go in a new `db/migration` file, never in an edited applied migration.
