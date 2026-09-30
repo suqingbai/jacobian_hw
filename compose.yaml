@@ -1,0 +1,12 @@
+# Local Postgres for the dev profile. Spring Boot's Docker Compose support starts it on
+# `bootRun` with the dev profile and wires the datasource to it; no manual `docker compose up`.
+# Keep the image tag in sync with PostgresTestConfiguration.
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: orders
+      POSTGRES_USER: orders
+      POSTGRES_PASSWORD: orders
+    ports:
+      - "5432"

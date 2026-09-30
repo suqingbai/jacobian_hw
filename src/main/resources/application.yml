@@ -1,9 +1,21 @@
 spring:
   application:
     name: order-intake
+  docker:
+    compose:
+      # Only the dev profile starts compose.yaml; see application-dev.yml.
+      enabled: false
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema (src/main/resources/db/migration); Hibernate only validates it.
+      ddl-auto: validate
 
 management:
   endpoints:
     web:
       exposure:
         include: health
+  endpoint:
+    health:
+      show-components: always
