@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: order-intake
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
