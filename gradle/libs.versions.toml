@@ -3,6 +3,8 @@ spring-boot = "3.5.16"
 spotless = "8.10.3"
 google-java-format = "1.36.1"
 checkstyle = "14.3.0"
+# Overrides Spring Boot's managed Flyway (11.7.x), which predates PostgreSQL 18 support (added in 11.14).
+flyway = "11.20.3"
 
 [libraries]
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
@@ -12,8 +14,8 @@ spring-boot-starter-validation = { module = "org.springframework.boot:spring-boo
 spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
 spring-boot-docker-compose = { module = "org.springframework.boot:spring-boot-docker-compose" }
 spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
-flyway-core = { module = "org.flywaydb:flyway-core" }
-flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
+flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
+flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
 postgresql = { module = "org.postgresql:postgresql" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter" }
 testcontainers-postgresql = { module = "org.testcontainers:postgresql" }
