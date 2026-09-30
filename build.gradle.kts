@@ -53,6 +53,10 @@ tasks.withType<Test>().configureEach {
     // The agent extends the bootstrap classpath, which is incompatible with class data sharing,
     // so CDS is disabled to keep the test JVM from warning about it.
     jvmArgs("-javaagent:${mockitoAgent.asPath}", "-Xshare:off")
+    // Log each test outcome so CI output shows which tests ran, passed, or were skipped.
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
 }
 
 spotless {
