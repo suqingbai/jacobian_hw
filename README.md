@@ -1,5 +1,7 @@
 # Order Intake Service
 
+[![CI](https://github.com/suqingbai/jacobian_hw/actions/workflows/ci.yml/badge.svg)](https://github.com/suqingbai/jacobian_hw/actions/workflows/ci.yml)
+
 Multi-tenant order intake service for the take-home described in
 [SeniorPlatformTakehome.md](SeniorPlatformTakehome.md). This is currently the starter skeleton:
 a Spring Boot app with the actuator health endpoint, lint, and tests wired up. The order
@@ -24,6 +26,8 @@ Requires a JDK 21 on the machine (or let Gradle toolchain resolution find one). 
 ./gradlew test             # tests only
 ./gradlew bootRun          # run on http://localhost:8080
 ```
+
+CI (`.github/workflows/ci.yml`) runs `./gradlew build` on every pull request and push to `main`.
 
 Health check once the app is running:
 
