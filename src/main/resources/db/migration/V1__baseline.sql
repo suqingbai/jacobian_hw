@@ -1,0 +1,2 @@
+-- Baseline migration: establishes Flyway ownership of the schema.
+-- Application tables are added in later migrations.
