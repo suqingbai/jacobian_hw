@@ -7,7 +7,7 @@ import java.util.Base64;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Keyset position for {@code GET /orders}: the last row's {@code (submitted_at, id)}. */
+/** Keyset position for {@code GET /v1/orders}: the last row's {@code (submitted_at, id)}. */
 public record PageCursor(Instant submittedAt, UUID id) {
 
   public String encode() {

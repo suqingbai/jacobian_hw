@@ -38,8 +38,8 @@ Isolation is layered so the database refuses cross-tenant access even when the c
 
 Tenant identification is deliberately simple for now, because security is out of scope:
 
-- `POST /orders` takes `tenant_id` from the JSON body.
-- `GET /orders` takes it from the unauthenticated `X-Tenant-Id` header, never from the URL.
+- `POST /v1/orders` takes `tenant_id` from the JSON body.
+- `GET /v1/orders` takes it from the unauthenticated `X-Tenant-Id` header, never from the URL.
 
 In production, the tenant must come from a verified JWT claim.
 

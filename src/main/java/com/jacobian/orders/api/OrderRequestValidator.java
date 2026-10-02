@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 
 /**
- * Validates a {@code POST /orders} body and turns it into an {@link OrderSubmission}, reporting
+ * Validates a {@code POST /v1/orders} body and turns it into an {@link OrderSubmission}, reporting
  * every problem at once.
  *
  * <p>Rules (assignment plus the approved schema): identifiers are trimmed before checking and

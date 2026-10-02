@@ -298,6 +298,26 @@ class OrderApiTests {
     assertThat(errors(unknown)).containsExactly("X-Tenant-Id:unknown_tenant");
   }
 
+  @Test
+  void theUnversionedPathsAreGone() {
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    headers.set("X-Tenant-Id", TENANT_A);
+
+    assertThat(
+            rest.exchange(
+                    "/orders",
+                    HttpMethod.POST,
+                    new HttpEntity<>(validOrder(TENANT_A), headers),
+                    String.class)
+                .getStatusCode())
+        .isEqualTo(HttpStatus.NOT_FOUND);
+    assertThat(
+            rest.exchange("/orders", HttpMethod.GET, new HttpEntity<>(headers), String.class)
+                .getStatusCode())
+        .isEqualTo(HttpStatus.NOT_FOUND);
+  }
+
   static Map<String, Object> validOrder(String tenantId) {
     Map<String, Object> order = new LinkedHashMap<>();
     order.put("tenant_id", tenantId);
@@ -322,7 +342,8 @@ class OrderApiTests {
   private ResponseEntity<String> post(Object body) {
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
-    return rest.exchange("/orders", HttpMethod.POST, new HttpEntity<>(body, headers), String.class);
+    return rest.exchange(
+        "/v1/orders", HttpMethod.POST, new HttpEntity<>(body, headers), String.class);
   }
 
   private ResponseEntity<String> get(String tenantId, String query) {
@@ -331,7 +352,7 @@ class OrderApiTests {
       headers.set("X-Tenant-Id", tenantId);
     }
     return rest.exchange(
-        "/orders" + query, HttpMethod.GET, new HttpEntity<>(headers), String.class);
+        "/v1/orders" + query, HttpMethod.GET, new HttpEntity<>(headers), String.class);
   }
 
   private static List<String> orderIds(ResponseEntity<String> response) {

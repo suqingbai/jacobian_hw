@@ -3,8 +3,8 @@
 [![CI](https://github.com/suqingbai/jacobian_hw/actions/workflows/ci.yml/badge.svg)](https://github.com/suqingbai/jacobian_hw/actions/workflows/ci.yml)
 
 Multi-tenant order intake service for the take-home described in
-[SeniorPlatformTakehome.md](SeniorPlatformTakehome.md): `POST /orders` accepts orders
-idempotently, `GET /orders` lists a tenant's orders, and PostgreSQL row-level security keeps
+[SeniorPlatformTakehome.md](SeniorPlatformTakehome.md): `POST /v1/orders` accepts orders
+idempotently, `GET /v1/orders` lists a tenant's orders, and PostgreSQL row-level security keeps
 tenants apart. Design records: [ADR-001 tenant isolation](docs/adr/ADR-001-tenant-isolation-rls.md)
 and [ADR-002 idempotency](docs/adr/ADR-002-idempotency.md).
 
@@ -12,6 +12,7 @@ and [ADR-002 idempotency](docs/adr/ADR-002-idempotency.md).
 
 - Java 21 (Gradle toolchain)
 - Spring Boot 3.5 (web, actuator, validation, data JPA)
+- springdoc-openapi 2.x for the OpenAPI document and Swagger UI
 - PostgreSQL 18, with Flyway owning the schema (`src/main/resources/db/migration`); Hibernate runs
   with `ddl-auto=validate` and never creates or alters tables
 - Gradle 8 with the Kotlin DSL; all versions live in `gradle/libs.versions.toml`
@@ -80,13 +81,21 @@ curl http://localhost:8080/actuator/health
 
 ## API
 
+The API is versioned in the path: every endpoint lives under `/v1`. Actuator endpoints stay
+unversioned under `/actuator`.
+
+With the app running, the OpenAPI document and Swagger UI are at:
+
+- Swagger UI: <http://localhost:8080/swagger-ui/index.html>
+- OpenAPI JSON: <http://localhost:8080/v3/api-docs>
+
 All JSON is snake_case. Errors are RFC 9457 problem documents (`application/problem+json`).
 Field-level problems are listed in `errors` as `{field, code, message}`.
 
-### `POST /orders`
+### `POST /v1/orders`
 
 ```sh
-curl -s localhost:8080/orders -H 'Content-Type: application/json' -d '{
+curl -s localhost:8080/v1/orders -H 'Content-Type: application/json' -d '{
   "tenant_id": "11111111-1111-1111-1111-111111111111",
   "external_order_id": "PO-2026-001",
   "submitted_by": { "user_id": "u-001", "display_name": "Jane Doe" },
@@ -128,10 +137,10 @@ Where this deviates from, or fills gaps in, the canonical schema in the assignme
 - **`submitted_at`:** an ISO-8601 date-time with an offset, at most 24 hours in the future,
   stored to microsecond precision.
 
-### `GET /orders`
+### `GET /v1/orders`
 
 ```sh
-curl -s 'localhost:8080/orders?submitted_from=2026-05-01T00:00:00Z&submitted_to=2026-06-01T00:00:00Z&limit=20' \
+curl -s 'localhost:8080/v1/orders?submitted_from=2026-05-01T00:00:00Z&submitted_to=2026-06-01T00:00:00Z&limit=20' \
   -H 'X-Tenant-Id: 11111111-1111-1111-1111-111111111111'
 # {"orders":[{...}, ...], "next_cursor":"MjAyNi0w..."}
 ```
