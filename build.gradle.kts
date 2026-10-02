@@ -28,7 +28,7 @@ dependencies {
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.flyway.core)
     implementation(libs.flyway.database.postgresql)
-    runtimeOnly(libs.postgresql)
+    implementation(libs.postgresql)
 
     developmentOnly(platform(libs.spring.boot.dependencies))
     developmentOnly(libs.spring.boot.docker.compose)

@@ -2,6 +2,8 @@ package com.jacobian.orders;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -22,11 +24,39 @@ class DatabaseConnectionTests {
   }
 
   @Test
-  void flywayAppliedBaselineMigration() {
-    Boolean applied =
-        jdbcTemplate.queryForObject(
-            "SELECT success FROM flyway_schema_history WHERE version = '1'", Boolean.class);
+  void appConnectsAsTheRowLevelSecurityBoundRole() {
+    Map<String, Object> role =
+        jdbcTemplate.queryForMap(
+            "SELECT rolname, rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user");
 
-    assertThat(applied).isTrue();
+    assertThat(role)
+        .containsEntry("rolname", "orders_app")
+        .containsEntry("rolsuper", false)
+        .containsEntry("rolbypassrls", false);
+  }
+
+  @Test
+  void flywayCreatedTheServiceSchemaAsItsOwnerWithForcedRowLevelSecurity() {
+    List<Map<String, Object>> tables =
+        jdbcTemplate.queryForList(
+            """
+            SELECT c.relname, pg_get_userbyid(c.relowner) AS owner,
+                   c.relrowsecurity, c.relforcerowsecurity
+            FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = 'order_service' AND c.relkind = 'r'
+            ORDER BY c.relname
+            """);
+
+    assertThat(tables)
+        .extracting(t -> t.get("relname"))
+        .containsExactly("flyway_schema_history", "order_items", "orders", "patients", "tenants");
+    assertThat(tables).allSatisfy(t -> assertThat(t).containsEntry("owner", "orders_owner"));
+    assertThat(tables)
+        .filteredOn(t -> List.of("order_items", "orders", "patients").contains(t.get("relname")))
+        .allSatisfy(
+            t ->
+                assertThat(t)
+                    .containsEntry("relrowsecurity", true)
+                    .containsEntry("relforcerowsecurity", true));
   }
 }

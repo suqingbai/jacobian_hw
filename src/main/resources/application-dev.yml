@@ -2,3 +2,13 @@ spring:
   docker:
     compose:
       enabled: true
+  datasource:
+    # compose.yaml publishes Postgres on ORDERS_DB_PORT (default 5432). The service connects
+    # as orders_app, which row-level security applies to.
+    url: jdbc:postgresql://localhost:${ORDERS_DB_PORT:5432}/orders
+    username: orders_app
+    password: orders_app
+  flyway:
+    user: orders_owner
+    password: orders_owner
+    locations: classpath:db/migration,classpath:db/seed
