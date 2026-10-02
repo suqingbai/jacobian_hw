@@ -70,7 +70,8 @@ daemon: both the dev profile and the tests start PostgreSQL in a container. Use 
 - **Schema changes:** add a new versioned Flyway migration (`V<n>__<description>.sql`) under
   `src/main/resources/db/migration`; never edit an applied one.
 
-CI (`.github/workflows/ci.yml`) runs `./gradlew build` on every pull request and push to `main`.
+CI (`.github/workflows/ci.yml`) runs `./gradlew build` and `./gradlew jibBuildTar` (to prove the
+container image builds; nothing is pushed) on every pull request and push to `main`.
 
 Health check once the app is running:
 
@@ -78,6 +79,56 @@ Health check once the app is running:
 curl http://localhost:8080/actuator/health
 # {"status":"UP","components":{"db":{"status":"UP"},...}}
 ```
+
+## Container image
+
+[Jib](https://github.com/GoogleContainerTools/jib) builds the image straight from the Gradle build,
+with no Dockerfile. Nothing in the build or CI pushes it anywhere.
+
+```sh
+./gradlew jibDockerBuild                       # to the local Docker daemon as order-intake:<version> and order-intake:latest
+./gradlew jibDockerBuild -Pimage=my/name:tag   # any other name (no extra latest tag)
+./gradlew jibBuildTar                          # build/jib-image.tar, no Docker daemon needed
+```
+
+- **Base:** `gcr.io/distroless/java21-debian13:nonroot`, pinned by digest in `build.gradle.kts`.
+  JRE only, no shell or package manager.
+- **Container:** runs as uid/gid `65532` (non-root), exposes `8080`, and caps the heap at 75% of
+  the container memory limit (`-XX:MaxRAMPercentage=75`).
+- **Classpath:** the same as `bootJar` (`productionRuntimeClasspath`), so the `developmentOnly`
+  Docker Compose support is not in the image.
+- **Platform:** `linux/amd64` by default; build for another one with
+  `-Djib.from.platforms=linux/arm64`.
+
+The image runs the default profile, so it needs the connection from the environment (see
+[Database](#database) for the roles):
+
+| Variable | Value |
+|---|---|
+| `SPRING_DATASOURCE_URL` | e.g. `jdbc:postgresql://postgres:5432/orders` |
+| `SPRING_DATASOURCE_USERNAME` | `orders_app` (the runtime role, under row-level security) |
+| `SPRING_DATASOURCE_PASSWORD` | its password |
+| `SPRING_FLYWAY_USER` | `orders_owner` (runs the migrations on startup) |
+| `SPRING_FLYWAY_PASSWORD` | its password |
+
+To try it against the dev Postgres from `compose.yaml` (roles created by `01-roles.sql`):
+
+```sh
+docker compose up -d --wait
+docker run --rm --name order-intake --network jacobian_hw_default -p 8080:8080 \
+  -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/orders \
+  -e SPRING_DATASOURCE_USERNAME=orders_app -e SPRING_DATASOURCE_PASSWORD=orders_app \
+  -e SPRING_FLYWAY_USER=orders_owner -e SPRING_FLYWAY_PASSWORD=orders_owner \
+  -e SPRING_FLYWAY_LOCATIONS=classpath:db/migration,classpath:db/seed \
+  order-intake:latest
+```
+
+- **Network:** Compose names the network after the project directory (`<dir>_default`); check
+  `docker network ls` if your checkout has another name.
+- **Seed data:** `SPRING_FLYWAY_LOCATIONS` adds the dev reference data so the
+  [`POST /v1/orders`](#post-v1orders) sample works. It is for local use only; leave it out
+  anywhere else.
+- **Cleanup:** stop the app with Ctrl-C, then `docker compose down -v`.
 
 ## API
 

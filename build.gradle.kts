@@ -3,6 +3,7 @@ plugins {
     checkstyle
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spotless)
+    alias(libs.plugins.jib)
 }
 
 group = "com.jacobian"
@@ -70,4 +71,40 @@ spotless {
 checkstyle {
     toolVersion = libs.versions.checkstyle.get()
     maxWarnings = 0
+}
+
+// Container image: ./gradlew jibDockerBuild builds to the local Docker daemon. Nothing pushes.
+jib {
+    // Same classpath as bootJar: runtimeClasspath also carries developmentOnly dependencies
+    // (Docker Compose support), which must stay out of the image.
+    configurationName = "productionRuntimeClasspath"
+    from {
+        // Distroless Java 21 (Debian 13), nonroot variant: JRE only, no shell or package manager,
+        // and a built-in nonroot user. Pinned to the multi-arch index digest for reproducible
+        // builds; bump the tag and digest together.
+        image =
+            "gcr.io/distroless/java21-debian13:nonroot" +
+            "@sha256:0a1f5a75661918de9c0813f287f651c3bf2d6dd752eada5f084eb0c1f14ced9e"
+    }
+    to {
+        // Override with -Pimage=registry/name:tag; the default is a local name only.
+        val imageOverride = providers.gradleProperty("image").orNull
+        image = imageOverride ?: "order-intake:${project.version}"
+        if (imageOverride == null) {
+            tags = setOf("latest")
+        }
+    }
+    container {
+        // The distroless nonroot user (uid/gid 65532), numeric so runAsNonRoot checks can verify it.
+        user = "65532:65532"
+        ports = listOf("8080")
+        jvmFlags = listOf("-XX:MaxRAMPercentage=75", "-XX:+ExitOnOutOfMemoryError")
+        labels.putAll(
+            mapOf(
+                "org.opencontainers.image.title" to rootProject.name,
+                "org.opencontainers.image.version" to project.version.toString(),
+                "org.opencontainers.image.source" to "https://github.com/suqingbai/jacobian_hw",
+            ),
+        )
+    }
 }
