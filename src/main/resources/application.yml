@@ -5,11 +5,35 @@ spring:
     compose:
       # Only the dev profile starts compose.yaml; see application-dev.yml.
       enabled: false
+  datasource:
+    hikari:
+      data-source-properties:
+        # Keep constraint-violation DETAIL (which echoes whole rows, PHI included) out of
+        # exception messages and logs.
+        logServerErrorDetail: false
+  flyway:
+    # Flyway creates the schema (as spring.flyway.user, the schema owner) and keeps its
+    # history table there. The app itself connects as spring.datasource.username.
+    schemas: order_service
+    placeholders:
+      appRole: orders_app
+      adminRole: orders_admin_user
   jpa:
     open-in-view: false
     hibernate:
       # Flyway owns the schema (src/main/resources/db/migration); Hibernate only validates it.
       ddl-auto: validate
+    properties:
+      hibernate.default_schema: order_service
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    deserialization:
+      accept-float-as-int: false
+    mapper:
+      allow-coercion-of-scalars: false
+  mvc:
+    problemdetails:
+      enabled: true
 
 management:
   endpoints:

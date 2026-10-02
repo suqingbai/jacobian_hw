@@ -1,6 +1,11 @@
 # Local Postgres for the dev profile. Spring Boot's Docker Compose support starts it on
-# `bootRun` with the dev profile and wires the datasource to it; no manual `docker compose up`.
+# `bootRun` with the dev profile; no manual `docker compose up`.
 # Keep the image tag in sync with PostgresTestConfiguration.
+#
+# The connection is configured explicitly in application-dev.yml instead of through Boot's
+# service connection, which would hand the app the POSTGRES_USER superuser and bypass
+# row-level security. docker/postgres/01-roles.sql creates the app, owner, and admin roles
+# the first time the data volume is initialized (reset with `docker compose down -v`).
 services:
   postgres:
     image: postgres:18
@@ -9,4 +14,15 @@ services:
       POSTGRES_USER: orders
       POSTGRES_PASSWORD: orders
     ports:
-      - "5432"
+      - "${ORDERS_DB_PORT:-5432}:5432"
+    volumes:
+      - ./docker/postgres/01-roles.sql:/docker-entrypoint-initdb.d/01-roles.sql:ro
+    healthcheck:
+      # TCP check: the init-time server only listens on the Unix socket, so this turns
+      # healthy only after 01-roles.sql has run and Postgres has restarted for real.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U orders -d orders"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    labels:
+      org.springframework.boot.ignore: "true"
