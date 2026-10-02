@@ -7,6 +7,7 @@ checkstyle = "14.3.0"
 flyway = "11.20.3"
 # Stay on the 2.x line: springdoc 3.x targets Spring Boot 4.
 springdoc = "2.9.1"
+jib = "3.5.4"
 
 [libraries]
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
@@ -29,3 +30,4 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+jib = { id = "com.google.cloud.tools.jib", version.ref = "jib" }

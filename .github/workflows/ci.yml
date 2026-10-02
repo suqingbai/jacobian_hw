@@ -23,6 +23,8 @@ jobs:
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v6
       - run: ./gradlew build
+      # Proves the container image builds; writes build/jib-image.tar and pushes nothing.
+      - run: ./gradlew jibBuildTar
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
