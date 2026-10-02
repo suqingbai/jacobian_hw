@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Parsed {@code GET /orders} parameters: the tenant from the {@code X-Tenant-Id} header, an
+ * Parsed {@code GET /v1/orders} parameters: the tenant from the {@code X-Tenant-Id} header, an
  * optional {@code submitted_at} range ({@code submitted_from} inclusive, {@code submitted_to}
  * exclusive), a page size, and a cursor from the previous page.
  */

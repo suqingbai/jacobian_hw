@@ -29,6 +29,7 @@ dependencies {
     implementation(libs.flyway.core)
     implementation(libs.flyway.database.postgresql)
     implementation(libs.postgresql)
+    implementation(libs.springdoc.openapi.starter.webmvc.ui)
 
     developmentOnly(platform(libs.spring.boot.dependencies))
     developmentOnly(libs.spring.boot.docker.compose)

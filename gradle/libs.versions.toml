@@ -5,6 +5,8 @@ google-java-format = "1.36.1"
 checkstyle = "14.3.0"
 # Overrides Spring Boot's managed Flyway (11.7.x), which predates PostgreSQL 18 support (added in 11.14).
 flyway = "11.20.3"
+# Stay on the 2.x line: springdoc 3.x targets Spring Boot 4.
+springdoc = "2.9.1"
 
 [libraries]
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
@@ -17,6 +19,7 @@ spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-te
 flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
 postgresql = { module = "org.postgresql:postgresql" }
+springdoc-openapi-starter-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter" }
 testcontainers-postgresql = { module = "org.testcontainers:postgresql" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }

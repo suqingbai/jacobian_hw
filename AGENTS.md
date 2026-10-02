@@ -8,6 +8,7 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 - Tests and the `dev` profile need Docker: tests use a Testcontainers Postgres (`PostgresTestConfiguration`, no H2), dev uses Spring Boot Docker Compose support with `compose.yaml`. Keep the Postgres image tag identical in both.
 - The app must connect as `orders_app` and Flyway as `orders_owner` (roles from `docker/postgres/01-roles.sql`); never use `@ServiceConnection` or the Compose service connection for Postgres, they force the superuser and silently disable row-level security (see `docs/adr/ADR-001-tenant-isolation-rls.md`). Tenant-scoped DB work must run in a transaction that calls `TenantSession.bind` first.
 - Flyway owns the schema (`ddl-auto=validate`); schema changes go in a new `db/migration` file, never in an edited applied migration.
+- API endpoints live under `/v1`; their OpenAPI docs are springdoc annotations on `OrderController` and the `api` DTOs. When a status, field, or validation rule changes, update the `@ApiResponse`/`@Schema` annotations in the same change (`OpenApiDocsTests` checks the documented statuses).
 - Checkstyle (`config/checkstyle/checkstyle.xml`) holds static rules only; formatting belongs to google-java-format via Spotless, so do not add formatting rules to Checkstyle.
 
 ## Maintaining this file
