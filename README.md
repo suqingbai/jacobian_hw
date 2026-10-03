@@ -71,7 +71,7 @@ daemon: both the dev profile and the tests start PostgreSQL in a container. Use 
   `src/main/resources/db/migration`; never edit an applied one.
 
 CI (`.github/workflows/ci.yml`) runs `./gradlew build` and `./gradlew jibBuildTar` (to prove the
-container image builds; nothing is pushed) on every pull request and push to `main`.
+container image builds; CI never pushes it) on every pull request and push to `main`.
 
 Health check once the app is running:
 
@@ -83,14 +83,20 @@ curl http://localhost:8080/actuator/health
 ## Container image
 
 [Jib](https://github.com/GoogleContainerTools/jib) builds the image straight from the Gradle build,
-with no Dockerfile. Nothing in the build or CI pushes it anywhere.
+with no Dockerfile. The image is
+[`suebai/order-intake`](https://hub.docker.com/r/suebai/order-intake) on Docker Hub, tagged with
+the project version and `latest`.
 
 ```sh
-./gradlew jibDockerBuild                       # to the local Docker daemon as order-intake:<version> and order-intake:latest
-./gradlew jibDockerBuild -Pimage=my/name:tag   # any other name (no extra latest tag)
+./gradlew jibDockerBuild                       # to the local Docker daemon
+./gradlew jibDockerBuild -Pimage=my/name:tag   # any other name (only that tag)
 ./gradlew jibBuildTar                          # build/jib-image.tar, no Docker daemon needed
+./gradlew jib                                  # build and push to Docker Hub
 ```
 
+- **Pushing:** `./gradlew jib` uses your Docker login (`docker login` as an account that can push
+  to `suebai/order-intake`); it does not need a local Docker daemon. CI never pushes; it only runs
+  `jibBuildTar` to prove the image builds.
 - **Base:** `gcr.io/distroless/java21-debian13:nonroot`, pinned by digest in `build.gradle.kts`.
   JRE only, no shell or package manager.
 - **Container:** runs as uid/gid `65532` (non-root), exposes `8080`, and caps the heap at 75% of
@@ -111,24 +117,28 @@ The image runs the default profile, so it needs the connection from the environm
 | `SPRING_FLYWAY_USER` | `orders_owner` (runs the migrations on startup) |
 | `SPRING_FLYWAY_PASSWORD` | its password |
 
-To try it against the dev Postgres from `compose.yaml` (roles created by `01-roles.sql`):
+### Full stack with Docker Compose
+
+The `app` service in [`compose.yaml`](compose.yaml) runs `suebai/order-intake:latest` next to the
+dev Postgres, with the variables above set for it:
 
 ```sh
-docker compose up -d --wait
-docker run --rm --name order-intake --network jacobian_hw_default -p 8080:8080 \
-  -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/orders \
-  -e SPRING_DATASOURCE_USERNAME=orders_app -e SPRING_DATASOURCE_PASSWORD=orders_app \
-  -e SPRING_FLYWAY_USER=orders_owner -e SPRING_FLYWAY_PASSWORD=orders_owner \
-  -e SPRING_FLYWAY_LOCATIONS=classpath:db/migration,classpath:db/seed \
-  order-intake:latest
+./gradlew jibDockerBuild                  # or skip it to pull the published image
+docker compose --profile app up -d --wait
+curl http://localhost:8080/actuator/health
+docker compose --profile app down -v      # stop and delete the data
 ```
 
-- **Network:** Compose names the network after the project directory (`<dir>_default`); check
-  `docker network ls` if your checkout has another name.
-- **Seed data:** `SPRING_FLYWAY_LOCATIONS` adds the dev reference data so the
-  [`POST /v1/orders`](#post-v1orders) sample works. It is for local use only; leave it out
-  anywhere else.
-- **Cleanup:** stop the app with Ctrl-C, then `docker compose down -v`.
+- **Profile:** the `app` service is behind the `app` Compose profile. Plain `docker compose up`,
+  and the `dev` profile's `bootRun`, start only Postgres, so the two never run the app twice.
+- **Ordering and health:** the app waits for Postgres to be healthy. Its own healthcheck runs
+  `ContainerHealthCheck` with the image's `java`, because the distroless image has no shell or
+  curl. It is healthy once `/actuator/health` answers 200, so `--wait` returns when the app is
+  ready.
+- **Seed data:** it sets `SPRING_FLYWAY_LOCATIONS=classpath:db/migration,classpath:db/seed`, so
+  the dev tenants and patients are loaded and the [`POST /v1/orders`](#post-v1orders) sample
+  works. That is for local use only; the image itself loads no seed data.
+- **Port:** published on `${ORDERS_APP_PORT:-8080}`.
 
 ## API
 

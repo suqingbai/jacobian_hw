@@ -15,6 +15,11 @@ java {
     }
 }
 
+springBoot {
+    // Explicit because ContainerHealthCheck also has a main method; Jib reads it from here.
+    mainClass = "com.jacobian.orders.OrderIntakeApplication"
+}
+
 val mockitoAgent: Configuration = configurations.create("mockitoAgent")
 
 repositories {
@@ -73,7 +78,8 @@ checkstyle {
     maxWarnings = 0
 }
 
-// Container image: ./gradlew jibDockerBuild builds to the local Docker daemon. Nothing pushes.
+// Container image: ./gradlew jibDockerBuild builds to the local Docker daemon, ./gradlew jib
+// pushes to the registry. CI only runs jibBuildTar.
 jib {
     // Same classpath as bootJar: runtimeClasspath also carries developmentOnly dependencies
     // (Docker Compose support), which must stay out of the image.
@@ -87,9 +93,10 @@ jib {
             "@sha256:0a1f5a75661918de9c0813f287f651c3bf2d6dd752eada5f084eb0c1f14ced9e"
     }
     to {
-        // Override with -Pimage=registry/name:tag; the default is a local name only.
+        // Docker Hub repository, tagged with the project version and latest. Override with
+        // -Pimage=registry/name:tag, which gets only that tag.
         val imageOverride = providers.gradleProperty("image").orNull
-        image = imageOverride ?: "order-intake:${project.version}"
+        image = imageOverride ?: "docker.io/suebai/order-intake:${project.version}"
         if (imageOverride == null) {
             tags = setOf("latest")
         }
@@ -97,6 +104,7 @@ jib {
     container {
         // The distroless nonroot user (uid/gid 65532), numeric so runAsNonRoot checks can verify it.
         user = "65532:65532"
+        mainClass = springBoot.mainClass.get()
         ports = listOf("8080")
         jvmFlags = listOf("-XX:MaxRAMPercentage=75", "-XX:+ExitOnOutOfMemoryError")
         labels.putAll(
