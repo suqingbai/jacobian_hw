@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jacobian.orders.PostgresTestConfiguration;
+import com.jacobian.orders.domain.OrderStatus;
 import com.jacobian.orders.domain.OrderSubmission;
 import com.jacobian.orders.domain.OrderType;
 import com.jacobian.orders.domain.Priority;
@@ -103,6 +104,7 @@ class RowLevelSecurityTests {
             "P-345678",
             OrderType.IMAGING,
             Priority.URGENT,
+            OrderStatus.SUBMITTED,
             List.of(new OrderSubmission.Item("XR-CHEST", null, 1)),
             null,
             Instant.parse("2026-01-01T00:00:00Z"));

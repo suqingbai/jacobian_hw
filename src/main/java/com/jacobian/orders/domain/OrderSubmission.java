@@ -5,8 +5,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * A validated order submission: identifiers are trimmed, enums are resolved, and {@code
- * submittedAt} is truncated to microseconds (what Postgres stores).
+ * A validated order submission: identifiers are trimmed, enums are resolved, an omitted status
+ * defaults to {@link OrderStatus#SUBMITTED}, and {@code submittedAt} is truncated to microseconds
+ * (what Postgres stores).
  */
 public record OrderSubmission(
     UUID tenantId,
@@ -16,6 +17,7 @@ public record OrderSubmission(
     String patientId,
     OrderType orderType,
     Priority priority,
+    OrderStatus status,
     List<Item> items,
     String notes,
     Instant submittedAt) {

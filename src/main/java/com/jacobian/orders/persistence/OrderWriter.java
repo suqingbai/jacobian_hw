@@ -22,9 +22,9 @@ public class OrderWriter {
   private static final String INSERT_ORDER =
       """
       INSERT INTO order_service.orders (
-          tenant_id, external_order_id, request_hash, patient_id, order_type, priority,
+          tenant_id, external_order_id, request_hash, patient_id, order_type, priority, status,
           submitted_by_user_id, submitted_by_display_name, notes, submitted_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT (tenant_id, external_order_id) DO NOTHING
       RETURNING id
       """;
@@ -64,6 +64,7 @@ public class OrderWriter {
             order.patientId(),
             String.valueOf(order.orderType().code()),
             String.valueOf(order.priority().code()),
+            order.status().wireValue(),
             order.submittedByUserId(),
             order.submittedByDisplayName(),
             order.notes(),

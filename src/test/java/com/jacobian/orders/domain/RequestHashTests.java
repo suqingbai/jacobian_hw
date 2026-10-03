@@ -2,6 +2,8 @@ package com.jacobian.orders.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -18,6 +20,7 @@ class RequestHashTests {
           "P-345678",
           OrderType.LAB,
           Priority.ROUTINE,
+          OrderStatus.SUBMITTED,
           List.of(
               new OrderSubmission.Item("CBC", "Complete Blood Count", 1),
               new OrderSubmission.Item("BMP", null, 2)),
@@ -40,6 +43,7 @@ class RequestHashTests {
             BASE.patientId(),
             BASE.orderType(),
             BASE.priority(),
+            BASE.status(),
             List.of(BASE.items().get(1), BASE.items().get(0)),
             BASE.notes(),
             Instant.parse("2020-01-01T00:00:00Z"));
@@ -138,8 +142,25 @@ class RequestHashTests {
         patientId,
         orderType,
         priority,
+        base.status(),
         items,
         notes,
         base.submittedAt());
+  }
+
+  @Test
+  void isTheV2CanonicalEncodingIncludingStatus() throws Exception {
+    String v2 =
+        "[\"v2\",\"P-345678\",\"lab\",\"routine\",\"submitted\",\"Pre-op screening\","
+            + "[[\"BMP\",null,2],[\"CBC\",\"Complete Blood Count\",1]]]";
+    String v1 =
+        "[\"v1\",\"P-345678\",\"lab\",\"routine\",\"Pre-op screening\","
+            + "[[\"BMP\",null,2],[\"CBC\",\"Complete Blood Count\",1]]]";
+
+    assertThat(RequestHash.of(BASE)).isEqualTo(sha256(v2)).isNotEqualTo(sha256(v1));
+  }
+
+  private static byte[] sha256(String input) throws Exception {
+    return MessageDigest.getInstance("SHA-256").digest(input.getBytes(StandardCharsets.UTF_8));
   }
 }

@@ -1,5 +1,6 @@
 package com.jacobian.orders.api;
 
+import com.jacobian.orders.domain.OrderStatus;
 import com.jacobian.orders.domain.OrderSubmission;
 import com.jacobian.orders.domain.OrderType;
 import com.jacobian.orders.domain.Priority;
@@ -90,10 +91,14 @@ public class OrderRequestValidator {
                 errors)
             .orElse(null);
 
-    if (request.status() != null && !"submitted".equals(request.status())) {
-      errors.add(
-          new FieldError(
-              "status", "invalid_value", "must be 'submitted' (or omitted) on submission"));
+    OrderStatus status = OrderStatus.SUBMITTED;
+    if (request.status() != null) {
+      status = OrderStatus.fromWireValue(request.status()).orElse(null);
+      if (status != OrderStatus.SUBMITTED) {
+        errors.add(
+            new FieldError(
+                "status", "invalid_value", "must be 'submitted' (or omitted) on submission"));
+      }
     }
 
     List<OrderSubmission.Item> items = validateItems(request.items(), errors);
@@ -111,6 +116,7 @@ public class OrderRequestValidator {
         patientId,
         orderType,
         priority,
+        status,
         items,
         notes,
         submittedAt);

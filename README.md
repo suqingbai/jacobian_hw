@@ -60,7 +60,8 @@ daemon: both the dev profile and the tests start PostgreSQL in a container. Use 
   - The container is stopped (not removed) when the app exits, so data survives restarts.
     `docker compose down -v` resets it; without `-v`, the Postgres data volume is left behind.
   - The roles are created only when the data volume is first initialized, so a volume from
-    before this change needs `docker compose down -v` once.
+    before this change needs `docker compose down -v` once. The same goes for orders created
+    before the request hash moved to `v2` (ADR-002 amendment): their replays return 409.
 - **Tests:** the Spring Boot tests import `PostgresTestConfiguration`. It starts a
   Testcontainers Postgres (same image tag as `compose.yaml`), runs the same `01-roles.sql`, and
   wires the same users and the seed explicitly. There is no in-memory database substitute, so
