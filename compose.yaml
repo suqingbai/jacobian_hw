@@ -2,6 +2,11 @@
 # `bootRun` with the dev profile; no manual `docker compose up`.
 # Keep the image tag in sync with PostgresTestConfiguration.
 #
+# The `app` service is the containerized service itself (build it first with
+# `./gradlew jibDockerBuild`). It is behind the `app` Compose profile, so Boot's Docker Compose
+# support, which activates no profiles, never starts it; `docker compose --profile app up`
+# starts both.
+#
 # The connection is configured explicitly in application-dev.yml instead of through Boot's
 # service connection, which would hand the app the POSTGRES_USER superuser and bypass
 # row-level security. docker/postgres/01-roles.sql creates the app, owner, and admin roles
@@ -24,5 +29,40 @@ services:
       interval: 1s
       timeout: 3s
       retries: 30
+    labels:
+      org.springframework.boot.ignore: "true"
+
+  app:
+    image: suebai/order-intake:latest
+    profiles: [app]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/orders
+      SPRING_DATASOURCE_USERNAME: orders_app
+      SPRING_DATASOURCE_PASSWORD: orders_app
+      SPRING_FLYWAY_USER: orders_owner
+      SPRING_FLYWAY_PASSWORD: orders_owner
+      # Dev reference data (tenants and patients), as in the dev profile. Local use only.
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed
+    ports:
+      - "${ORDERS_APP_PORT:-8080}:8080"
+    healthcheck:
+      # The distroless image has no shell or curl; probe /actuator/health with its own java.
+      test:
+        - CMD
+        - java
+        - -Xmx16m
+        - -XX:+UseSerialGC
+        - -XX:TieredStopAtLevel=1
+        - -cp
+        - /app/classes
+        - com.jacobian.orders.ContainerHealthCheck
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      start_interval: 2s
+      retries: 3
     labels:
       org.springframework.boot.ignore: "true"
