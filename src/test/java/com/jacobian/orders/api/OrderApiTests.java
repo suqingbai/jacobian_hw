@@ -101,6 +101,22 @@ class OrderApiTests {
   }
 
   @Test
+  void anOmittedStatusAndAnExplicitSubmittedStatusAreTheSameOrder() {
+    Map<String, Object> order = validOrder(TENANT_A);
+    order.remove("status");
+    String firstId = JsonPath.read(post(order).getBody(), "$.id");
+
+    Map<String, Object> explicit = new LinkedHashMap<>(order);
+    explicit.put("status", "submitted");
+
+    for (Map<String, Object> replay : List.of(explicit, order)) {
+      ResponseEntity<String> response = post(replay);
+      assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+      assertThat(JsonPath.<String>read(response.getBody(), "$.id")).isEqualTo(firstId);
+    }
+  }
+
+  @Test
   void aConflictingResubmissionReturns409NamingTheExistingOrder() {
     Map<String, Object> order = validOrder(TENANT_A);
     String firstId = JsonPath.read(post(order).getBody(), "$.id");

@@ -12,17 +12,18 @@ import java.util.List;
 /**
  * SHA-256 over the content that makes two submissions "the same order" (ADR-002).
  *
- * <p>Included: patient_id, order_type, priority, notes, and the items (code, description, quantity)
- * sorted so their order does not matter. Excluded: tenant_id and external_order_id (they are the
- * idempotency key), status (server-owned), submitted_at, and submitted_by.
+ * <p>Included: patient_id, order_type, priority, the effective status (after an omitted status
+ * defaults to submitted), notes, and the items (code, description, quantity) sorted so their order
+ * does not matter. Excluded: tenant_id and external_order_id (they are the idempotency key),
+ * submitted_at, and submitted_by.
  *
  * <p>The input is a JSON array in a fixed field order, built from validated, trimmed values, so
  * JSON formatting, key order, and absent-versus-null optional fields cannot change it.
  */
 public final class RequestHash {
 
-  /** Bumped only if the coverage or encoding ever changes. */
-  private static final String VERSION = "v1";
+  /** Bumped only if the coverage or encoding ever changes; v2 added status. */
+  private static final String VERSION = "v2";
 
   private static final ObjectMapper CANONICAL_JSON = new ObjectMapper();
 
@@ -52,6 +53,7 @@ public final class RequestHash {
     canonical.add(submission.patientId());
     canonical.add(submission.orderType().wireValue());
     canonical.add(submission.priority().wireValue());
+    canonical.add(submission.status().wireValue());
     canonical.add(submission.notes());
     canonical.add(items);
     return sha256(toJson(canonical));

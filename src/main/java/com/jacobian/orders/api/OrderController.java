@@ -75,8 +75,9 @@ public class OrderController {
           """
           Stores a new order, idempotently on `(tenant_id, external_order_id)` (ADR-002). An \
           identical resubmission returns the original order with 200; content is compared by a \
-          hash of `patient.patient_id`, `order_type`, `priority`, `notes`, and `items` (in any \
-          order), so `submitted_at`, `submitted_by`, and `status` do not count. The same \
+          hash of `patient.patient_id`, `order_type`, `priority`, `status` (an omitted status \
+          counts as `submitted`), `notes`, and `items` (in any order), so `submitted_at` and \
+          `submitted_by` do not count. The same \
           `external_order_id` with different content is a 409. The tenant and the patient must \
           already exist. Every validation problem is reported at once.""")
   @ApiResponse(
