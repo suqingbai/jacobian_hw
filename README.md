@@ -73,7 +73,8 @@ daemon: both the dev profile and the tests start PostgreSQL in a container. Use 
   `src/main/resources/db/migration`; never edit an applied one.
 
 CI (`.github/workflows/ci.yml`) runs `./gradlew build` and `./gradlew jibBuildTar` (to prove the
-container image builds; CI never pushes it) on every pull request and push to `main`.
+container image builds) on every pull request and push to `main`. Pushes to `main` then publish
+the image (see [Container image](#container-image)); pull requests never publish.
 
 Health check once the app is running:
 
@@ -97,8 +98,11 @@ the project version and `latest`.
 ```
 
 - **Pushing:** `./gradlew jib` uses your Docker login (`docker login` as an account that can push
-  to `suebai/order-intake`); it does not need a local Docker daemon. CI never pushes; it only runs
-  `jibBuildTar` to prove the image builds.
+  to `suebai/order-intake`); it does not need a local Docker daemon.
+- **CI publishing:** every push to `main` publishes automatically once build and tests pass: CI
+  logs in as `suebai` with the `DOCKER_HUB_TOKEN` secret and runs `./gradlew jib`, tagging the
+  project version, `latest`, and the 7-character commit SHA. Pull request runs only run
+  `jibBuildTar`.
 - **Base:** `gcr.io/distroless/java21-debian13:nonroot`, pinned by digest in `build.gradle.kts`.
   JRE only, no shell or package manager.
 - **Container:** runs as uid/gid `65532` (non-root), exposes `8080`, and caps the heap at 75% of
