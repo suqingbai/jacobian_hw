@@ -10,7 +10,8 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded PR runs, but let a main run finish so a publish is never cut off mid-push.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -25,6 +26,16 @@ jobs:
       - run: ./gradlew build
       # Proves the container image builds; writes build/jib-image.tar and pushes nothing.
       - run: ./gradlew jibBuildTar
+      # Publish only for pushes to main, after everything above passed. PR runs skip both steps.
+      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v4
+        with:
+          username: suebai
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      # Pushes the project version, latest, and the short commit SHA (jib.to.tags replaces the
+      # build script's tag set, so latest is listed again here).
+      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: ./gradlew jib "-Djib.to.tags=latest,${GITHUB_SHA::7}"
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
