@@ -50,8 +50,10 @@ daemon: both the dev profile and the tests start PostgreSQL in a container. Use 
   Don't use Boot's `@ServiceConnection`, or the Compose service connection, for Postgres.
   They hand the app the superuser and silently bypass row-level security. See ADR-001.
 - **Dev profile:**
-  - `bootRun` with the `dev` profile starts [`compose.yaml`](compose.yaml) through Spring
-    Boot's Docker Compose support. There is no separate `docker compose up` step.
+  - `bootRun` with the `dev` profile starts the `postgres` service of
+    [`compose.yaml`](compose.yaml) through Spring Boot's Docker Compose support
+    (`spring.docker.compose.start.arguments` limits it to that service, since the app runs
+    locally). There is no separate `docker compose up` step.
   - It connects to `localhost:${ORDERS_DB_PORT:-5432}` as the roles above, and it also loads
     the dev reference data in `db/seed`: tenants `1111...` and `2222...`, and patient
     `P-345678` in each.
@@ -119,22 +121,20 @@ The image runs the default profile, so it needs the connection from the environm
 
 ### Full stack with Docker Compose
 
-The `app` service in [`compose.yaml`](compose.yaml) runs `suebai/order-intake:latest` next to the
-dev Postgres, with the variables above set for it:
+`docker compose up` starts the dev Postgres and the `app` service, which runs
+`suebai/order-intake:latest` with the variables above set for it:
 
 ```sh
-./gradlew jibDockerBuild                  # or skip it to pull the published image
-docker compose --profile app up -d --wait
+./gradlew jibDockerBuild   # or skip it to pull the published image
+docker compose up -d
 curl http://localhost:8080/actuator/health
-docker compose --profile app down -v      # stop and delete the data
+docker compose down -v     # stop and delete the data
 ```
 
-- **Profile:** the `app` service is behind the `app` Compose profile. Plain `docker compose up`,
-  and the `dev` profile's `bootRun`, start only Postgres, so the two never run the app twice.
-- **Ordering and health:** the app waits for Postgres to be healthy. Its own healthcheck runs
-  `ContainerHealthCheck` with the image's `java`, because the distroless image has no shell or
-  curl. It is healthy once `/actuator/health` answers 200, so `--wait` returns when the app is
-  ready.
+- **Either this or `bootRun`:** both serve on port 8080, so run the full stack or the dev
+  profile's `bootRun`, not both at once.
+- **Ordering:** the app starts once Postgres is healthy. It has no container healthcheck (the
+  distroless image has no shell or curl), so poll `/actuator/health` until it is UP.
 - **Seed data:** it sets `SPRING_FLYWAY_LOCATIONS=classpath:db/migration,classpath:db/seed`, so
   the dev tenants and patients are loaded and the [`POST /v1/orders`](#post-v1orders) sample
   works. That is for local use only; the image itself loads no seed data.
@@ -145,7 +145,8 @@ docker compose --profile app down -v      # stop and delete the data
 The API is versioned in the path: every endpoint lives under `/v1`. Actuator endpoints stay
 unversioned under `/actuator`.
 
-With the app running, the OpenAPI document and Swagger UI are at:
+With the app running, from `bootRun` or the container, the OpenAPI document and Swagger UI are
+at (enabled explicitly in every profile):
 
 - Swagger UI: <http://localhost:8080/swagger-ui/index.html>
 - OpenAPI JSON: <http://localhost:8080/v3/api-docs>
