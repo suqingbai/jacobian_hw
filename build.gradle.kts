@@ -15,11 +15,6 @@ java {
     }
 }
 
-springBoot {
-    // Explicit because ContainerHealthCheck also has a main method; Jib reads it from here.
-    mainClass = "com.jacobian.orders.OrderIntakeApplication"
-}
-
 val mockitoAgent: Configuration = configurations.create("mockitoAgent")
 
 repositories {
@@ -104,7 +99,6 @@ jib {
     container {
         // The distroless nonroot user (uid/gid 65532), numeric so runAsNonRoot checks can verify it.
         user = "65532:65532"
-        mainClass = springBoot.mainClass.get()
         ports = listOf("8080")
         jvmFlags = listOf("-XX:MaxRAMPercentage=75", "-XX:+ExitOnOutOfMemoryError")
         labels.putAll(

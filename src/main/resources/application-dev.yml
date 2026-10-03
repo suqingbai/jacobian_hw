@@ -2,6 +2,9 @@ spring:
   docker:
     compose:
       enabled: true
+      start:
+        # The service runs locally here, so start only Postgres, not compose.yaml's app container.
+        arguments: postgres
   datasource:
     # compose.yaml publishes Postgres on ORDERS_DB_PORT (default 5432). The service connects
     # as orders_app, which row-level security applies to.

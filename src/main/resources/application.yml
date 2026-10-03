@@ -35,6 +35,14 @@ spring:
     problemdetails:
       enabled: true
 
+springdoc:
+  # The OpenAPI document and Swagger UI are part of the service in every profile, the container
+  # included. Explicit so the intent is clear (and springdoc does not warn about the default).
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
 management:
   endpoints:
     web:
