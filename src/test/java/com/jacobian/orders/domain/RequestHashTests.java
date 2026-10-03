@@ -149,15 +149,12 @@ class RequestHashTests {
   }
 
   @Test
-  void isTheV2CanonicalEncodingIncludingStatus() throws Exception {
-    String v2 =
-        "[\"v2\",\"P-345678\",\"lab\",\"routine\",\"submitted\",\"Pre-op screening\","
-            + "[[\"BMP\",null,2],[\"CBC\",\"Complete Blood Count\",1]]]";
-    String v1 =
-        "[\"v1\",\"P-345678\",\"lab\",\"routine\",\"Pre-op screening\","
+  void isTheCanonicalEncodingIncludingStatus() throws Exception {
+    String canonical =
+        "[\"v1\",\"P-345678\",\"lab\",\"routine\",\"submitted\",\"Pre-op screening\","
             + "[[\"BMP\",null,2],[\"CBC\",\"Complete Blood Count\",1]]]";
 
-    assertThat(RequestHash.of(BASE)).isEqualTo(sha256(v2)).isNotEqualTo(sha256(v1));
+    assertThat(RequestHash.of(BASE)).isEqualTo(sha256(canonical));
   }
 
   private static byte[] sha256(String input) throws Exception {

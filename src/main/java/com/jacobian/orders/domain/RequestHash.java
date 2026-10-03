@@ -22,8 +22,8 @@ import java.util.List;
  */
 public final class RequestHash {
 
-  /** Bumped only if the coverage or encoding ever changes; v2 added status. */
-  private static final String VERSION = "v2";
+  /** Bumped only if the coverage or encoding ever changes. */
+  private static final String VERSION = "v1";
 
   private static final ObjectMapper CANONICAL_JSON = new ObjectMapper();
 

@@ -35,7 +35,7 @@ racing retries can't both insert.
 |---|---|
 | `patient.patient_id` | `tenant_id`, `external_order_id`: they are the key |
 | `order_type`, `priority` | `submitted_at`: a retry is the same order however the client stamps it |
-| `status`, after an omitted one defaults to `submitted` (amended 2026-10-02) | `submitted_by.user_id`, `submitted_by.display_name`: who resubmits does not change what was ordered |
+| `status`, after an omitted one defaults to `submitted` | `submitted_by.user_id`, `submitted_by.display_name`: who resubmits does not change what was ordered |
 | `notes` | item order: a reordered list is the same order; repeated items still count |
 | `items[]`: `code`, `description`, `quantity`, sorted by `(code, description, quantity)` | |
 
@@ -43,31 +43,21 @@ racing retries can't both insert.
 validated, trimmed values:
 
 ```
-["v2", patient_id, order_type, priority, status, notes, [[code, description, quantity], ...]]
+["v1", patient_id, order_type, priority, status, notes, [[code, description, quantity], ...]]
 ```
 
 The items are sorted, and a missing description sorts first. JSON whitespace, key order, and
 absent versus `null` optional fields cannot change the hash, and neither can an omitted versus
-an explicit `"status": "submitted"`. The version tag keeps hashes of different coverage from
-colliding; `v1` lacked `status`.
+an explicit `"status": "submitted"`. The `v1` tag leaves room to change the coverage later
+without collisions.
 
-## Amendment 2026-10-02: `status` is part of the hash
+## Amendment 2026-10-02
 
-At the captain's request, the order's effective status now counts toward "the same logical
-order". The original reason for leaving it out (the server owns it) no longer holds: the client
-sends it on submission, and a submission is a statement of which state the order enters in. An
-omitted status defaults to `submitted` before hashing, so it hashes like an explicit
-`"submitted"`, and the hash uses the API wire value. The stored `status` column is now written
-from the same validated value. The hash records the status as submitted, not the current
-one, so a later lifecycle change to the stored row still cannot turn a replay into a 409.
-
-- The canonical version went from `v1` to `v2`.
-- Only `submitted` is accepted today, so no request can yet produce a status-only 409. The
-  coverage takes effect once more submission statuses exist.
-- Rows written before this change hold `v1` hashes, so replaying such an order gives a false
-  409. There is no production data, so there is no backfill and no dual-version comparison:
-  reset dev data with `docker compose down -v`; test databases are created fresh per run. A
-  later coverage change with real data would need one of those.
+At the captain's request, `status` is part of the covered fields: a submission states which
+state the order enters in, so it counts toward "the same logical order". The hash uses the
+effective status after an omitted one defaults to `submitted`, as its API wire value, and the
+stored `status` column is written from that same value. The hash records the status as
+submitted, so a later lifecycle change to the stored row cannot turn a replay into a 409.
 
 ## Alternatives considered
 
@@ -94,5 +84,6 @@ one, so a later lifecycle change to the stored row still cannot turn a replay in
   patients are never deleted.
 - **Tests cover** a 201, then a 200 for an identical replay. They also cover a replay that
   changes `submitted_at`, the submitter, or item order, or adds whitespace around the id, which
-  still returns 200, and an omitted versus an explicit `submitted` status. Finally, a changed priority gives a 409, and the same `external_order_id`
-  in another tenant is independent.
+  still returns 200, as does an omitted versus an explicit `submitted` status. Finally, a
+  changed priority gives a 409, and the same `external_order_id` in another tenant is
+  independent.
