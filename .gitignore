@@ -22,3 +22,6 @@ bin/
 
 # Logs
 *.log
+
+# Take-home assignment brief: kept locally, not published
+SeniorPlatformTakehome.md
