@@ -2,11 +2,7 @@
 
 [![CI](https://github.com/suqingbai/jacobian_hw/actions/workflows/ci.yml/badge.svg)](https://github.com/suqingbai/jacobian_hw/actions/workflows/ci.yml)
 
-Multi-tenant order intake service for the take-home described in
-[SeniorPlatformTakehome.md](SeniorPlatformTakehome.md): `POST /v1/orders` accepts orders
-idempotently, `GET /v1/orders` lists a tenant's orders, and PostgreSQL row-level security keeps
-tenants apart. Design records: [ADR-001 tenant isolation](docs/adr/ADR-001-tenant-isolation-rls.md)
-and [ADR-002 idempotency](docs/adr/ADR-002-idempotency.md).
+Multi-tenant order intake service.
 
 ## Stack
 
@@ -19,29 +15,42 @@ and [ADR-002 idempotency](docs/adr/ADR-002-idempotency.md).
 - Lint: Spotless + google-java-format (formatting) and Checkstyle (static rules,
   `config/checkstyle/checkstyle.xml`)
 
-## Development
-
-Requires a JDK 21 on the machine (or let Gradle toolchain resolution find one) and a running Docker
-daemon: both the dev profile and the tests start PostgreSQL in a container. Use the wrapper:
+## quick start
 
 ```sh
-./gradlew build            # compile, lint, and test (fails on any lint violation)
-./gradlew check            # lint + tests only
-./gradlew spotlessApply    # auto-fix formatting
-./gradlew test             # tests only
-./gradlew bootRun --args='--spring.profiles.active=dev'   # run on http://localhost:8080
+docker compose up  # start the dev Postgres and the app container
+health check: http://localhost:8080/actuator/health
+swagger UI: http://localhost:8080/swagger-ui/index.html
 ```
+**Seed data**:
 
-### Database
+tenant: `11111111-1111-1111-1111-111111111111`
+patient: `P-345678`, `P-100001`
 
-- **Schema:** every table lives in the `order_service` schema:
+tenant `22222222-2222-2222-2222-222222222222`
+Patient: `P-345678`, `P-200001`
+
+**Create order** and **list orders** via Swagger UI '**try it out**' buttons, or `curl` as in the [API](#api) section.
+
+
+## Database
+
+Choose PostgreSQL for its maturity, low cost(open source), and rich features for future proofing(full text search, vector database support)
+
+Created `order_service` schema for the service to maintain modularity of the database layer.
+
+Assumed `tenants` and `patients` are maintained outside this service, and the intake service never creates or update them. `patient` and `tenant` tables are the local copy of the required data. Other service(s) maintains the source of truth.
+
+Separate database roles for the service, flyway, and admin-user.
+
+- **Schema:** in the `order_service` schema:
   - `tenants` and `patients`: read-only reference data.
   - `orders` and `order_items`: owned by the service.
 - **Roles:** four database identities, each with one job. Only the bootstrap superuser is a
   superuser, and nothing connects as it after setup.
 
   | Role | Used by | Notes |
-  |---|---|---|
+    |---|---|---|
   | `POSTGRES_USER` | the container, once | runs [`docker/postgres/01-roles.sql`](docker/postgres/01-roles.sql), which creates the three roles below |
   | `orders_owner` | Flyway (`spring.flyway.user`) | owns the schema and every table |
   | `orders_app` | the service (`spring.datasource.username`) | always under row-level security; no DDL |
@@ -71,6 +80,19 @@ daemon: both the dev profile and the tests start PostgreSQL in a container. Use 
   `SPRING_FLYWAY_PASSWORD`.
 - **Schema changes:** add a new versioned Flyway migration (`V<n>__<description>.sql`) under
   `src/main/resources/db/migration`; never edit an applied one.
+
+## Development
+
+Requires a JDK 21 on the machine (or let Gradle toolchain resolution find one) and a running Docker
+daemon: both the dev profile and the tests start PostgreSQL in a container. Use the wrapper:
+
+```sh
+./gradlew build            # compile, lint, and test (fails on any lint violation)
+./gradlew check            # lint + tests only
+./gradlew spotlessApply    # auto-fix formatting
+./gradlew test             # tests only
+./gradlew bootRun --args='--spring.profiles.active=dev'   # run on http://localhost:8080 with postgreSQL container running and seeded patient and tenant records
+```
 
 CI (`.github/workflows/ci.yml`) runs `./gradlew build` and `./gradlew jibBuildTar` (to prove the
 container image builds) on every pull request and push to `main`. Pushes to `main` then publish
